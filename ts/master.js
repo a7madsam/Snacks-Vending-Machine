@@ -30,16 +30,19 @@ var globalVariable = {
         });
         return arrayOfPrices;
     },
-    numberOfItemsLeft: function () {
-        var arrayOfItemsLeft = [];
-        domElement.itemLeft.forEach(function (item) {
-            arrayOfItemsLeft.push(Number(item.innerHTML));
-        });
-        return arrayOfItemsLeft;
-    }
+    numberOfItemsLeft: []
 };
+function fillItemLeft() {
+    domElement.itemLeft.forEach(function (item) {
+        globalVariable.numberOfItemsLeft.push(Number(item.innerHTML));
+    });
+}
+fillItemLeft();
 function getChange(amount, itemNumber) {
     amount -= globalVariable.prices()[itemNumber - 1];
+    amount = Number(amount.toFixed(1));
+    globalVariable.change = amount;
+    console.log("amount = ", amount);
     var res = {
         change: 0,
         stringChange: ""
@@ -51,13 +54,15 @@ function getChange(amount, itemNumber) {
         while (amount >= item) {
             numberOfItem++;
             totalOfItem += item;
+            amount -= item;
+            amount = Number(amount.toFixed(1));
         }
         res.change += totalOfItem;
-        if (numberOfItem > 0)
+        if (numberOfItem > 0) {
             res.stringChange += "[".concat(numberOfItem, " x ").concat(item, "$] + ");
+        }
     });
-    globalVariable.change = res.change;
-    globalVariable.stringChange = res.stringChange;
+    globalVariable.stringChange = res.stringChange.substring(0, res.stringChange.length - 1);
 }
 function reset() {
     if (globalVariable.totalAmountOfInsertedCoins > 0) {
@@ -74,21 +79,20 @@ function reset() {
     enableCash();
     enableCredit();
     hideCredit();
-    domElement.screenPanel.innerHTML = "Ejecting...";
-    setTimeout(function () {
-        new SnackVendingMachine();
-    }, 1500);
+    // domElement.screenPanel.innerHTML = "Ejecting...";
+    new SnackVendingMachine();
 }
 function update() {
     var i = 0;
     domElement.itemLeft.forEach(function (item) {
-        item.innerHTML = globalVariable.numberOfItemsLeft()[i];
-        if (globalVariable.numberOfItemsLeft()[i] == 0) {
+        item.innerHTML = globalVariable.numberOfItemsLeft[i];
+        if (globalVariable.numberOfItemsLeft[i] == 0) {
             item.parentElement.parentElement.parentElement.firstElementChild.classList.add("empty");
         }
         else {
             item.parentElement.parentElement.parentElement.firstElementChild.classList.remove("empty");
         }
+        i++;
     });
 }
 function disableCash() {
@@ -115,9 +119,10 @@ var NoMoneyState = /** @class */ (function () {
         }, 2000);
     }
     NoMoneyState.prototype.selectItemAndInsertMoney = function () {
-        getChange(globalVariable.totalAmountOfInsertedCoins, Number(globalVariable.selectedProduct));
-        domElement.screenPanel.innerHTML = "You inserted ".concat(globalVariable.totalAmountOfInsertedCoins, "$ and selected [").concat(globalVariable.selectedProduct, ":").concat(globalVariable.prices()[Number(globalVariable.selectedProduct) - 1], "]</br>Your change: ").concat(globalVariable.stringChange);
         this.snackVendingMachine.setState = this.snackVendingMachine.SoldState;
+        getChange(globalVariable.totalAmountOfInsertedCoins, Number(globalVariable.selectedProduct));
+        domElement.screenPanel.innerHTML = "You inserted ".concat(globalVariable.totalAmountOfInsertedCoins, "$ and selected [").concat(globalVariable.selectedProduct, ":").concat(globalVariable.prices()[Number(globalVariable.selectedProduct) - 1], "], Your change: ").concat(globalVariable.stringChange);
+        console.log(domElement.screenPanel.innerHTML);
     };
     NoMoneyState.prototype.dispenseItem = function () {
         domElement.screenPanel.innerHTML = "Snacks Vending Machine cannot dispense item because money is not inserted or item is not selected...";
@@ -142,10 +147,12 @@ var SoldState = /** @class */ (function () {
     };
     SoldState.prototype.dispenseItem = function () {
         domElement.screenPanel.innerHTML = "In process...";
-        globalVariable.numberOfItemsLeft()[Number(globalVariable.selectedProduct) - 1]--;
+        globalVariable.numberOfItemsLeft[Number(globalVariable.selectedProduct) - 1]--;
         update();
+        globalVariable.totalAmountOfInsertedCoins = 0;
+        domElement.changeArea.innerHTML = globalVariable.change.toFixed(1) + "$";
+        setTimeout(reset, 2000);
         this.snackVendingMachine.setState = this.snackVendingMachine.noMoneyState;
-        setTimeout(reset, 1500);
     };
     return SoldState;
 }());
@@ -195,6 +202,7 @@ function sumInsertedCoin(event) {
         disableCredit();
     }
     else {
+        console.log(startVendingMachine.getState);
         startVendingMachine.getState.selectItemAndInsertMoney();
     }
 }
@@ -271,6 +279,7 @@ function collectCashAndAcceptItem() {
     var itemNumberInserted = false;
     var itemNumberTrue = false;
     var validatePrices = false;
+    var itemSoldOut = true;
     //check if money inserted
     if (globalVariable.totalAmountOfInsertedCoins > 0) {
         moneyInserted = true;
@@ -285,14 +294,14 @@ function collectCashAndAcceptItem() {
     }
     if (!moneyInserted) {
         domElement.screenPanel.innerHTML = "Please insert Money to complete Process or ESC to cancel";
+        globalVariable.selectedProduct = "";
         return;
     }
     if (!itemNumberInserted) {
-        domElement.screenPanel.innerHTML = "Please select item to buy or ESC to cancel";
+        domElement.screenPanel.innerHTML = "Please select correct item number to buy or ESC to cancel";
         return;
     }
     if (!itemNumberTrue) {
-        console.log("reach");
         domElement.screenPanel.innerHTML = "Wrong item number";
         globalVariable.selectedProduct = "";
         setTimeout(function () {
@@ -300,20 +309,37 @@ function collectCashAndAcceptItem() {
         }, 1000);
         return;
     }
+    //check if item is not soldOut
+    if (globalVariable.numberOfItemsLeft[Number(globalVariable.selectedProduct) - 1] > 0) {
+        itemSoldOut = false;
+    }
+    if (itemSoldOut) {
+        domElement.screenPanel.innerHTML = "Sorry, item #".concat(globalVariable.selectedProduct, " sold out,please select another item or ESC to cancel");
+        globalVariable.selectedProduct = "";
+        return;
+    }
     //validate if totalAmountOfInsertedCoins >= price of selected item
     if (globalVariable.totalAmountOfInsertedCoins -
         globalVariable.prices()[Number(globalVariable.selectedProduct) - 1] >=
         0) {
+        console.log("eee");
         validatePrices = true;
     }
     if (!validatePrices) {
-        domElement.screenPanel.innerHTML = "your inserted money is not enough for buy selected item so insert ".concat(globalVariable.prices()[Number(globalVariable.selectedProduct) - 1] -
+        domElement.screenPanel.innerHTML = "your inserted money is not enough to buy selected item so insert ".concat(globalVariable.prices()[Number(globalVariable.selectedProduct) - 1] -
             globalVariable.totalAmountOfInsertedCoins, " or more to buy it or ESC to cancel");
         return;
     }
-    if (moneyInserted && itemNumberInserted && itemNumberTrue && validatePrices) {
+    if (moneyInserted &&
+        itemNumberInserted &&
+        itemNumberTrue &&
+        validatePrices &&
+        !itemSoldOut) {
+        console.log("all true");
         startVendingMachine.getState.selectItemAndInsertMoney();
-        startVendingMachine.getState.dispenseItem();
+        setTimeout(function () {
+            startVendingMachine.getState.dispenseItem();
+        }, 2000);
     }
 }
 domElement.acceptInputItemBtn.addEventListener("click", collectCashAndAcceptItem);
