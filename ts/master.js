@@ -62,7 +62,7 @@ function getChange(amount, itemNumber) {
             res.stringChange += "[".concat(numberOfItem, " x ").concat(item, "$] + ");
         }
     });
-    globalVariable.stringChange = res.stringChange.substring(0, res.stringChange.length - 1);
+    globalVariable.stringChange = res.stringChange.substring(0, res.stringChange.length - 2);
 }
 function reset() {
     if (globalVariable.totalAmountOfInsertedCoins > 0) {

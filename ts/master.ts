@@ -66,7 +66,7 @@ function getChange(amount: number, itemNumber: number) {
   });
   globalVariable.stringChange = res.stringChange.substring(
     0,
-    res.stringChange.length - 1
+    res.stringChange.length - 2
   );
 }
 function reset() {
@@ -85,7 +85,7 @@ function reset() {
   enableCredit();
   hideCredit();
   // domElement.screenPanel.innerHTML = "Ejecting...";
-    new SnackVendingMachine();
+  new SnackVendingMachine();
 }
 function update() {
   let i = 0;
