@@ -311,7 +311,12 @@ function collectCashAndAcceptItem() {
   }
   if (!moneyInserted) {
     domElement.screenPanel.innerHTML = `Please insert Money to complete Process or ESC to cancel`;
-    globalVariable.selectedProduct = "";
+    if (
+      Number(globalVariable.selectedProduct) < 1 ||
+      Number(globalVariable.selectedProduct) > 25
+    ) {
+      globalVariable.selectedProduct = "";
+    }
     return;
   }
   if (!itemNumberInserted) {
