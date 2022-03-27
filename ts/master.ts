@@ -33,50 +33,253 @@ let globalVariable = {
     return arrayOfPrices;
   },
   numberOfItemsLeft: [],
+  coins: [],
+  typeOfPayment: 0,
 };
+//interface that explain the states of our VendingMachine
+interface SnackVendingMachineState {
+  selectItemAndInsertMoney(): void;
+  ejectMoney(): void;
+  dispenseItem(): void;
+}
+//state class implementation
+class NoMoneyState implements SnackVendingMachineState {
+  snackVendingMachine: SnackVendingMachine;
+  constructor(snackVendingMachine: SnackVendingMachine) {
+    this.snackVendingMachine = snackVendingMachine;
+    domElement.screenPanel.innerHTML = `Welcome at Snacks Vending Machine`;
+    setTimeout(() => {
+      domElement.screenPanel.innerHTML = `Please enter item number or insert your card or coins`;
+    }, 2000);
+  }
+  selectItemAndInsertMoney(): void {
+    this.snackVendingMachine.setState = this.snackVendingMachine.SoldState;
+    if (globalVariable.typeOfPayment == 2) {
+      getChangeForCredit(
+        globalVariable.totalAmountOfInsertedCoins,
+        Number(globalVariable.selectedProduct)
+      );
+    } else {
+      getChangeForCash(
+        globalVariable.totalAmountOfInsertedCoins,
+        Number(globalVariable.selectedProduct)
+      );
+    }
+    domElement.screenPanel.innerHTML = `You inserted ${
+      globalVariable.totalAmountOfInsertedCoins
+    }$ and selected [${globalVariable.selectedProduct}:${
+      globalVariable.prices()[Number(globalVariable.selectedProduct) - 1]
+    }], Your change: ${globalVariable.stringChange} <br>In process...`;
+    console.log(domElement.screenPanel.innerHTML);
+  }
+  dispenseItem(): void {
+    domElement.screenPanel.innerHTML = `Snacks Vending Machine cannot dispense item because money is not inserted or item is not selected...`;
+  }
+  ejectMoney(): void {
+    domElement.screenPanel.innerHTML =
+      "Snacks Vending Machine cannot eject Money because there is no money inserted...";
+  }
+}
+class SoldState implements SnackVendingMachineState {
+  snackVendingMachine: SnackVendingMachine;
+  constructor(snackVendingMachine: SnackVendingMachine) {
+    this.snackVendingMachine = snackVendingMachine;
+  }
+  selectItemAndInsertMoney() {
+    domElement.screenPanel.innerHTML =
+      "Sorry, you cannot select item or insert Money, Snacks Vending Machine already dispensing item";
+  }
+  ejectMoney(): void {
+    domElement.screenPanel.innerHTML =
+      "Sorry, you cannot eject Money, Snacks Vending Machine already dispensing item";
+  }
+  dispenseItem(): void {
+    domElement.screenPanel.innerHTML = `In process...`;
+    globalVariable.numberOfItemsLeft[
+      Number(globalVariable.selectedProduct) - 1
+    ]--;
+    update();
+    globalVariable.totalAmountOfInsertedCoins = 0;
+    domElement.changeArea.innerHTML =
+      globalVariable.stringChange +
+      "=" +
+      globalVariable.change.toFixed(2) +
+      "$";
+    setTimeout(reset, 2500);
+    this.snackVendingMachine.setState = this.snackVendingMachine.noMoneyState;
+  }
+}
+
+//SnackVendingMachine main class to maintains states
+class SnackVendingMachine {
+  noMoneyState: SnackVendingMachineState;
+  hasMoneyState: SnackVendingMachineState;
+  soldState: SnackVendingMachineState;
+  currentState: SnackVendingMachineState;
+
+  constructor() {
+    this.noMoneyState = new NoMoneyState(this);
+    this.soldState = new SoldState(this);
+    this.currentState = this.noMoneyState;
+  }
+  get NoMoneyState() {
+    return this.noMoneyState;
+  }
+  get SoldState() {
+    return this.soldState;
+  }
+  set setState(state: SnackVendingMachineState) {
+    this.currentState = state;
+  }
+  get getState() {
+    return this.currentState;
+  }
+}
+class Coin {
+  _denomination: string;
+  _amount: number;
+  constructor(_denomination, _amount) {
+    this._denomination = _denomination;
+    this._amount = _amount;
+  }
+  set setAmount(amount: number) {
+    this._amount = amount;
+  }
+  get getDenomination() {
+    return this._denomination;
+  }
+  get getAmount() {
+    return this._amount;
+  }
+}
+//Initial denomination coins
+globalVariable.coins.push(
+  new Coin("_10cent", 1000),
+  new Coin("_20cent", 500),
+  new Coin("_50cent", 200),
+  new Coin("_1dollar", 100),
+  new Coin("_20dollar", 5),
+  new Coin("_50dollar", 2)
+);
+//Initial the number of left for each item
 function fillItemLeft() {
   domElement.itemLeft.forEach((item) => {
     globalVariable.numberOfItemsLeft.push(Number(item.innerHTML));
   });
 }
 fillItemLeft();
-function getChange(amount: number, itemNumber: number) {
-  amount -= globalVariable.prices()[itemNumber - 1];
-  amount = Number(amount.toFixed(1));
-  globalVariable.change = amount;
-  console.log("amount = ", amount);
+//increase or decrease the amount of cash in machine
+function cashOnMachine(targetCoin, amount) {
+  if (typeof targetCoin === "string") {
+    for (let i = 0; i < globalVariable.coins.length; i++) {
+      if (globalVariable.coins[i].getDenomination === targetCoin) {
+        globalVariable.coins[i].setAmount =
+          globalVariable.coins[i].getAmount + amount;
+      }
+    }
+  } else {
+    for (let i = 0; i < globalVariable.coins.length; i++) {
+      if (globalVariable.coins[i].getDenomination === targetCoin.className) {
+        globalVariable.coins[i].setAmount =
+          globalVariable.coins[i].getAmount + amount;
+      }
+    }
+  }
+}
+
+function getChangeForCash(amount: number, itemNumber: number) {
+  const coins = [500, 200, 10, 5, 2, 1]; //multiplied by 10 to convert coins to get rid of any fraction
+  const stringCoin = [
+    "_10cent",
+    "_20cent",
+    "_50cent",
+    "_1dollar",
+    "_20dollar",
+    "_50dollar",
+  ];
+  let itemNumberValidate;
+  if (itemNumber === 0) {
+    itemNumberValidate = 0;
+  } else {
+    itemNumberValidate = globalVariable.prices()[itemNumber - 1];
+  }
+  let change = amount - itemNumberValidate;
+  change = Number(change.toFixed(2));
+  globalVariable.change = Number(change.toFixed(2));
+  change *= 10;
+  let min_coins = []; //to track minimum coins needed
+  let last_coin = []; // to store last [minimum number of coin] type
+  min_coins[0] = 0; // base case --> minimum number of coin == 0 at first(to get 0 change)
+  for (let k = 1; k <= change; ++k) {
+    min_coins[k] = Number.MAX_VALUE; //initial to compare [to get minimum]
+    for (let i = 0; i < coins.length; i++) {
+      if (
+        k - coins[i] >= 0 &&
+        globalVariable.coins[coins.length - i - 1].getAmount > 0
+      ) {
+        if (min_coins[k - coins[i]] + 1 < min_coins[k]) {
+          min_coins[k] = min_coins[k - coins[i]] + 1;
+          last_coin[k] = coins[i];
+        }
+      }
+    }
+  }
+  let temp = change;
   let res = {
-    change: 0,
-    stringChange: ``,
+    // work as a map
+    1: 0,
+    2: 0,
+    5: 0,
+    10: 0,
+    200: 0,
+    500: 0,
   };
-  let domi = [50, 20, 1, 0.5, 0.2, 0.1];
-  domi.forEach((item) => {
-    let numberOfItem = 0;
-    let totalOfItem = 0;
-    while (amount >= item) {
-      numberOfItem++;
-      totalOfItem += item;
-      amount -= item;
-      amount = Number(amount.toFixed(1));
+  while (temp > 0) {
+    res[last_coin[temp]]++;
+    temp -= last_coin[temp];
+  }
+  let i = 0;
+  let changeString = ``;
+  for (const item in res) {
+    if (res[item] > 0) {
+      cashOnMachine(stringCoin[i], -res[item]);
+      if (Number(item) <= 5) {
+        changeString += `[${res[item]}x${Number(item) * 10}cent] + `;
+      } else {
+        changeString += `[${res[item]}x${Number(item) / 10}$] + `;
+      }
     }
-    res.change += totalOfItem;
-    if (numberOfItem > 0) {
-      res.stringChange += `[${numberOfItem} x ${item}$] + `;
-    }
-  });
-  globalVariable.stringChange = res.stringChange.substring(
+    i++;
+  }
+  globalVariable.stringChange = changeString.substring(
     0,
-    res.stringChange.length - 2
+    changeString.length - 2
   );
+}
+function getChangeForCredit(amount: number, itemNumber: number) {
+  let itemNumberValidate;
+  if (itemNumber === 0) {
+    itemNumberValidate = 0;
+  } else {
+    itemNumberValidate = globalVariable.prices()[itemNumber - 1];
+  }
+  amount -= itemNumberValidate;
+  amount = Number(amount.toFixed(2));
+  globalVariable.change = amount;
+  globalVariable.stringChange = `[${amount.toFixed(1)}$]`;
 }
 function reset() {
   if (globalVariable.totalAmountOfInsertedCoins > 0) {
-    domElement.changeArea.innerHTML =
-      globalVariable.totalAmountOfInsertedCoins.toString() + "$";
+    if (globalVariable.typeOfPayment === 1) {
+      getChangeForCash(globalVariable.totalAmountOfInsertedCoins, 0);
+    } else {
+      getChangeForCredit(globalVariable.totalAmountOfInsertedCoins, 0);
+    }
+    domElement.changeArea.innerHTML = globalVariable.stringChange;
   }
   setTimeout(() => {
     domElement.changeArea.innerHTML = "";
-  }, 2000);
+  }, 2500);
   globalVariable.totalAmountOfInsertedCoins = 0;
   globalVariable.selectedProduct = "";
   globalVariable.change = 0;
@@ -84,9 +287,9 @@ function reset() {
   enableCash();
   enableCredit();
   hideCredit();
-  // domElement.screenPanel.innerHTML = "Ejecting...";
   new SnackVendingMachine();
 }
+//update all number of item left after dispensing
 function update() {
   let i = 0;
   domElement.itemLeft.forEach((item) => {
@@ -118,107 +321,20 @@ function disableCredit() {
 function enableCredit() {
   domElement.creditSVG.classList.remove("disable");
 }
-//interface that explain the states of our VendingMachine
-interface SnackVendingMachineState {
-  selectItemAndInsertMoney(): void;
-  ejectMoney(): void;
-  dispenseItem(): void;
-}
-//state class implementation
-class NoMoneyState implements SnackVendingMachineState {
-  snackVendingMachine: SnackVendingMachine;
-  constructor(snackVendingMachine: SnackVendingMachine) {
-    this.snackVendingMachine = snackVendingMachine;
-    domElement.screenPanel.innerHTML = `Welcome at Snacks Vending Machine`;
-    setTimeout(() => {
-      domElement.screenPanel.innerHTML = `Please enter item number or insert your card or coins`;
-    }, 2000);
-  }
-  selectItemAndInsertMoney(): void {
-    this.snackVendingMachine.setState = this.snackVendingMachine.SoldState;
-    getChange(
-      globalVariable.totalAmountOfInsertedCoins,
-      Number(globalVariable.selectedProduct)
-    );
-    domElement.screenPanel.innerHTML = `You inserted ${
-      globalVariable.totalAmountOfInsertedCoins
-    }$ and selected [${globalVariable.selectedProduct}:${
-      globalVariable.prices()[Number(globalVariable.selectedProduct) - 1]
-    }], Your change: ${globalVariable.stringChange}`;
-    console.log(domElement.screenPanel.innerHTML);
-  }
-  dispenseItem(): void {
-    domElement.screenPanel.innerHTML = `Snacks Vending Machine cannot dispense item because money is not inserted or item is not selected...`;
-  }
-  ejectMoney(): void {
-    domElement.screenPanel.innerHTML =
-      "Snacks Vending Machine cannot eject Money because there is no money inserted...";
-  }
-}
-class SoldState implements SnackVendingMachineState {
-  snackVendingMachine: SnackVendingMachine;
-  constructor(snackVendingMachine: SnackVendingMachine) {
-    this.snackVendingMachine = snackVendingMachine;
-  }
-  selectItemAndInsertMoney() {
-    domElement.screenPanel.innerHTML =
-      "Sorry, you cannot select item or insert Money, Snacks Vending Machine already dispensing item";
-  }
-  ejectMoney(): void {
-    domElement.screenPanel.innerHTML =
-      "Sorry, you cannot eject Money, Snacks Vending Machine already dispensing item";
-  }
-  dispenseItem(): void {
-    domElement.screenPanel.innerHTML = `In process...`;
-    globalVariable.numberOfItemsLeft[
-      Number(globalVariable.selectedProduct) - 1
-    ]--;
-    update();
-    globalVariable.totalAmountOfInsertedCoins = 0;
-    domElement.changeArea.innerHTML = globalVariable.change.toFixed(1) + "$";
-    setTimeout(reset, 2000);
-    this.snackVendingMachine.setState = this.snackVendingMachine.noMoneyState;
-  }
-}
-
-//SnackVendingMachine main class to maintains states
-class SnackVendingMachine {
-  noMoneyState: SnackVendingMachineState;
-  hasMoneyState: SnackVendingMachineState;
-  soldState: SnackVendingMachineState;
-  currentState: SnackVendingMachineState;
-
-  constructor() {
-    this.noMoneyState = new NoMoneyState(this);
-    this.soldState = new SoldState(this);
-    this.currentState = this.noMoneyState;
-  }
-  get NoMoneyState() {
-    return this.noMoneyState;
-  }
-  get SoldState() {
-    return this.soldState;
-  }
-  set setState(state: SnackVendingMachineState) {
-    this.currentState = state;
-  }
-  get getState() {
-    return this.currentState;
-  }
-}
 //begin vending machine
 let startVendingMachine = new SnackVendingMachine();
 function sumInsertedCoin(event) {
   if (startVendingMachine.getState instanceof NoMoneyState) {
+    globalVariable.typeOfPayment = 1;
     globalVariable.totalAmountOfInsertedCoins += Number(
-      event.target.getAttribute("data-money")
+      Number(event.target.getAttribute("data-money")).toFixed(1)
     );
+    cashOnMachine(event.target, 1);
     domElement.screenPanel.innerHTML = `You insert ${globalVariable.totalAmountOfInsertedCoins.toFixed(
-      1
+      2
     )}$, please select item to buy or ESC to cancel`;
     disableCredit();
   } else {
-    console.log(startVendingMachine.getState);
     startVendingMachine.getState.selectItemAndInsertMoney();
   }
 }
@@ -244,6 +360,7 @@ function getItemNumber(event) {
 }
 function showCredit() {
   if (startVendingMachine.getState instanceof NoMoneyState) {
+    globalVariable.typeOfPayment = 2;
     domElement.creditSVG.classList.add("when-credit-clicked-img");
     domElement.creditInput.classList.add("when-credit-clicked-input");
     domElement.creditButton.classList.add("when-credit-clicked-button");
@@ -277,11 +394,11 @@ domElement.insertionAreaDeleteButton.addEventListener("click", () => {
 });
 domElement.creditButton.addEventListener("click", () => {
   let tempCreditInput = domElement.creditInput.value;
-  console.log(tempCreditInput.length);
+  domElement.creditInput.value = "";
   if (tempCreditInput.length > 0) {
     globalVariable.totalAmountOfInsertedCoins += Number(tempCreditInput);
     domElement.screenPanel.innerHTML = `You insert ${globalVariable.totalAmountOfInsertedCoins.toFixed(
-      1
+      2
     )}$, please select item to buy or ESC to cancel`;
     hideCredit();
     disableCredit();
@@ -350,14 +467,13 @@ function collectCashAndAcceptItem() {
       globalVariable.prices()[Number(globalVariable.selectedProduct) - 1] >=
     0
   ) {
-    console.log("eee");
     validatePrices = true;
   }
   if (!validatePrices) {
-    domElement.screenPanel.innerHTML = `your inserted money is not enough to buy selected item so insert ${
+    domElement.screenPanel.innerHTML = `your inserted money is not enough to buy selected item so insert ${(
       globalVariable.prices()[Number(globalVariable.selectedProduct) - 1] -
       globalVariable.totalAmountOfInsertedCoins
-    } or more to buy it or ESC to cancel`;
+    ).toFixed(2)} or more to buy it or ESC to cancel`;
     return;
   }
   if (
@@ -367,11 +483,10 @@ function collectCashAndAcceptItem() {
     validatePrices &&
     !itemSoldOut
   ) {
-    console.log("all true");
     startVendingMachine.getState.selectItemAndInsertMoney();
     setTimeout(() => {
       startVendingMachine.getState.dispenseItem();
-    }, 2000);
+    }, 3500);
   }
 }
 domElement.acceptInputItemBtn.addEventListener(

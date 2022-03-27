@@ -217,12 +217,10 @@ img {
 .when-credit-clicked-input {
   visibility: visible !important;
   transition: 0.2s !important;
-  /* transition-delay: 0.5s !important; */
 }
 .when-credit-clicked-button {
   visibility: visible !important;
   transition: 0.2s !important;
-  /* transition-delay: 0.5s !important; */
 }
 .move-insertion-area {
   margin-top: 30px !important;
@@ -235,8 +233,6 @@ img {
   height: 25px;
   width: 140px;
   outline: none;
-  /* transition: 0.5s; */
-  /* transition-delay: 0.5s; */
 }
 .coin-slots .credit button {
   position: absolute;
@@ -249,8 +245,6 @@ img {
   height: 25px;
   top: 40px;
   visibility: hidden;
-  /* transition: 0.5s; */
-  /* transition-delay: 0.5s; */
   cursor: pointer;
 }
 .coin-slots .credit input:focus::placeholder {
@@ -296,13 +290,12 @@ img {
 .section-two .change-area {
   background-color: var(--alt-background-color);
   color: white;
-  width: 80px;
+  width: 150px;
   height: 80px;
   border-radius: 10px;
   display: flex;
   justify-content: center;
   align-items: center;
-  font-weight: bold;
-  font-size: 1.2rem;
+  text-align: center;
 }
 /* end control panel area */

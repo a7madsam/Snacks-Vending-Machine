@@ -30,85 +30,10 @@ var globalVariable = {
         });
         return arrayOfPrices;
     },
-    numberOfItemsLeft: []
+    numberOfItemsLeft: [],
+    coins: [],
+    typeOfPayment: 0
 };
-function fillItemLeft() {
-    domElement.itemLeft.forEach(function (item) {
-        globalVariable.numberOfItemsLeft.push(Number(item.innerHTML));
-    });
-}
-fillItemLeft();
-function getChange(amount, itemNumber) {
-    amount -= globalVariable.prices()[itemNumber - 1];
-    amount = Number(amount.toFixed(1));
-    globalVariable.change = amount;
-    console.log("amount = ", amount);
-    var res = {
-        change: 0,
-        stringChange: ""
-    };
-    var domi = [50, 20, 1, 0.5, 0.2, 0.1];
-    domi.forEach(function (item) {
-        var numberOfItem = 0;
-        var totalOfItem = 0;
-        while (amount >= item) {
-            numberOfItem++;
-            totalOfItem += item;
-            amount -= item;
-            amount = Number(amount.toFixed(1));
-        }
-        res.change += totalOfItem;
-        if (numberOfItem > 0) {
-            res.stringChange += "[".concat(numberOfItem, " x ").concat(item, "$] + ");
-        }
-    });
-    globalVariable.stringChange = res.stringChange.substring(0, res.stringChange.length - 2);
-}
-function reset() {
-    if (globalVariable.totalAmountOfInsertedCoins > 0) {
-        domElement.changeArea.innerHTML =
-            globalVariable.totalAmountOfInsertedCoins.toString() + "$";
-    }
-    setTimeout(function () {
-        domElement.changeArea.innerHTML = "";
-    }, 2000);
-    globalVariable.totalAmountOfInsertedCoins = 0;
-    globalVariable.selectedProduct = "";
-    globalVariable.change = 0;
-    globalVariable.stringChange = "";
-    enableCash();
-    enableCredit();
-    hideCredit();
-    // domElement.screenPanel.innerHTML = "Ejecting...";
-    new SnackVendingMachine();
-}
-function update() {
-    var i = 0;
-    domElement.itemLeft.forEach(function (item) {
-        item.innerHTML = globalVariable.numberOfItemsLeft[i];
-        if (globalVariable.numberOfItemsLeft[i] == 0) {
-            item.parentElement.parentElement.parentElement.firstElementChild.classList.add("empty");
-        }
-        else {
-            item.parentElement.parentElement.parentElement.firstElementChild.classList.remove("empty");
-        }
-        i++;
-    });
-}
-function disableCash() {
-    domElement.denomination.classList.add("disable");
-    domElement.note.classList.add("disable");
-}
-function enableCash() {
-    domElement.denomination.classList.remove("disable");
-    domElement.note.classList.remove("disable");
-}
-function disableCredit() {
-    domElement.creditSVG.classList.add("disable");
-}
-function enableCredit() {
-    domElement.creditSVG.classList.remove("disable");
-}
 //state class implementation
 var NoMoneyState = /** @class */ (function () {
     function NoMoneyState(snackVendingMachine) {
@@ -120,8 +45,13 @@ var NoMoneyState = /** @class */ (function () {
     }
     NoMoneyState.prototype.selectItemAndInsertMoney = function () {
         this.snackVendingMachine.setState = this.snackVendingMachine.SoldState;
-        getChange(globalVariable.totalAmountOfInsertedCoins, Number(globalVariable.selectedProduct));
-        domElement.screenPanel.innerHTML = "You inserted ".concat(globalVariable.totalAmountOfInsertedCoins, "$ and selected [").concat(globalVariable.selectedProduct, ":").concat(globalVariable.prices()[Number(globalVariable.selectedProduct) - 1], "], Your change: ").concat(globalVariable.stringChange);
+        if (globalVariable.typeOfPayment == 2) {
+            getChangeForCredit(globalVariable.totalAmountOfInsertedCoins, Number(globalVariable.selectedProduct));
+        }
+        else {
+            getChangeForCash(globalVariable.totalAmountOfInsertedCoins, Number(globalVariable.selectedProduct));
+        }
+        domElement.screenPanel.innerHTML = "You inserted ".concat(globalVariable.totalAmountOfInsertedCoins, "$ and selected [").concat(globalVariable.selectedProduct, ":").concat(globalVariable.prices()[Number(globalVariable.selectedProduct) - 1], "], Your change: ").concat(globalVariable.stringChange, " <br>In process...");
         console.log(domElement.screenPanel.innerHTML);
     };
     NoMoneyState.prototype.dispenseItem = function () {
@@ -150,8 +80,12 @@ var SoldState = /** @class */ (function () {
         globalVariable.numberOfItemsLeft[Number(globalVariable.selectedProduct) - 1]--;
         update();
         globalVariable.totalAmountOfInsertedCoins = 0;
-        domElement.changeArea.innerHTML = globalVariable.change.toFixed(1) + "$";
-        setTimeout(reset, 2000);
+        domElement.changeArea.innerHTML =
+            globalVariable.stringChange +
+            "=" +
+            globalVariable.change.toFixed(2) +
+            "$";
+        setTimeout(reset, 2500);
         this.snackVendingMachine.setState = this.snackVendingMachine.noMoneyState;
     };
     return SoldState;
@@ -193,16 +127,202 @@ var SnackVendingMachine = /** @class */ (function () {
     });
     return SnackVendingMachine;
 }());
+var Coin = /** @class */ (function () {
+    function Coin(_denomination, _amount) {
+        this._denomination = _denomination;
+        this._amount = _amount;
+    }
+    Object.defineProperty(Coin.prototype, "setAmount", {
+        set: function (amount) {
+            this._amount = amount;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(Coin.prototype, "getDenomination", {
+        get: function () {
+            return this._denomination;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(Coin.prototype, "getAmount", {
+        get: function () {
+            return this._amount;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    return Coin;
+}());
+//Initial denomination coins
+globalVariable.coins.push(new Coin("_10cent", 1000), new Coin("_20cent", 500), new Coin("_50cent", 200), new Coin("_1dollar", 100), new Coin("_20dollar", 5), new Coin("_50dollar", 2));
+//Initial the number of left for each item
+function fillItemLeft() {
+    domElement.itemLeft.forEach(function (item) {
+        globalVariable.numberOfItemsLeft.push(Number(item.innerHTML));
+    });
+}
+fillItemLeft();
+//increase or decrease the amount of cash in machine
+function cashOnMachine(targetCoin, amount) {
+    if (typeof targetCoin === "string") {
+        for (var i = 0; i < globalVariable.coins.length; i++) {
+            if (globalVariable.coins[i].getDenomination === targetCoin) {
+                globalVariable.coins[i].setAmount =
+                    globalVariable.coins[i].getAmount + amount;
+            }
+        }
+    }
+    else {
+        for (var i = 0; i < globalVariable.coins.length; i++) {
+            if (globalVariable.coins[i].getDenomination === targetCoin.className) {
+                globalVariable.coins[i].setAmount =
+                    globalVariable.coins[i].getAmount + amount;
+            }
+        }
+    }
+}
+function getChangeForCash(amount, itemNumber) {
+    var coins = [500, 200, 10, 5, 2, 1]; //multiplied by 10 to convert coins to get rid of any fraction
+    var stringCoin = [
+        "_10cent",
+        "_20cent",
+        "_50cent",
+        "_1dollar",
+        "_20dollar",
+        "_50dollar",
+    ];
+    var itemNumberValidate;
+    if (itemNumber === 0) {
+        itemNumberValidate = 0;
+    }
+    else {
+        itemNumberValidate = globalVariable.prices()[itemNumber - 1];
+    }
+    var change = amount - itemNumberValidate;
+    change = Number(change.toFixed(2));
+    globalVariable.change = Number(change.toFixed(2));
+    change *= 10;
+    var min_coins = []; //to track minimum coins needed
+    var last_coin = []; // to store last [minimum number of coin] type
+    min_coins[0] = 0; // base case --> minimum number of coin == 0 at first(to get 0 change)
+    for (var k = 1; k <= change; ++k) {
+        min_coins[k] = Number.MAX_VALUE; //initial to compare [to get minimum]
+        for (var i_1 = 0; i_1 < coins.length; i_1++) {
+            if (k - coins[i_1] >= 0 &&
+                globalVariable.coins[coins.length - i_1 - 1].getAmount > 0) {
+                if (min_coins[k - coins[i_1]] + 1 < min_coins[k]) {
+                    min_coins[k] = min_coins[k - coins[i_1]] + 1;
+                    last_coin[k] = coins[i_1];
+                }
+            }
+        }
+    }
+    var temp = change;
+    var res = {
+        // work as a map
+        1: 0,
+        2: 0,
+        5: 0,
+        10: 0,
+        200: 0,
+        500: 0
+    };
+    while (temp > 0) {
+        res[last_coin[temp]]++;
+        temp -= last_coin[temp];
+    }
+    var i = 0;
+    var changeString = "";
+    for (var item in res) {
+        if (res[item] > 0) {
+            cashOnMachine(stringCoin[i], -res[item]);
+            if (Number(item) <= 5) {
+                changeString += "[".concat(res[item], "x").concat(Number(item) * 10, "cent] + ");
+            }
+            else {
+                changeString += "[".concat(res[item], "x").concat(Number(item) / 10, "$] + ");
+            }
+        }
+        i++;
+    }
+    globalVariable.stringChange = changeString.substring(0, changeString.length - 2);
+}
+function getChangeForCredit(amount, itemNumber) {
+    var itemNumberValidate;
+    if (itemNumber === 0) {
+        itemNumberValidate = 0;
+    }
+    else {
+        itemNumberValidate = globalVariable.prices()[itemNumber - 1];
+    }
+    amount -= itemNumberValidate;
+    amount = Number(amount.toFixed(2));
+    globalVariable.change = amount;
+    globalVariable.stringChange = "[".concat(amount.toFixed(1), "$]");
+}
+function reset() {
+    if (globalVariable.totalAmountOfInsertedCoins > 0) {
+        if (globalVariable.typeOfPayment === 1) {
+            getChangeForCash(globalVariable.totalAmountOfInsertedCoins, 0);
+        }
+        else {
+            getChangeForCredit(globalVariable.totalAmountOfInsertedCoins, 0);
+        }
+        domElement.changeArea.innerHTML = globalVariable.stringChange;
+    }
+    setTimeout(function () {
+        domElement.changeArea.innerHTML = "";
+    }, 2500);
+    globalVariable.totalAmountOfInsertedCoins = 0;
+    globalVariable.selectedProduct = "";
+    globalVariable.change = 0;
+    globalVariable.stringChange = "";
+    enableCash();
+    enableCredit();
+    hideCredit();
+    new SnackVendingMachine();
+}
+//update all number of item left after dispensing
+function update() {
+    var i = 0;
+    domElement.itemLeft.forEach(function (item) {
+        item.innerHTML = globalVariable.numberOfItemsLeft[i];
+        if (globalVariable.numberOfItemsLeft[i] == 0) {
+            item.parentElement.parentElement.parentElement.firstElementChild.classList.add("empty");
+        }
+        else {
+            item.parentElement.parentElement.parentElement.firstElementChild.classList.remove("empty");
+        }
+        i++;
+    });
+}
+function disableCash() {
+    domElement.denomination.classList.add("disable");
+    domElement.note.classList.add("disable");
+}
+function enableCash() {
+    domElement.denomination.classList.remove("disable");
+    domElement.note.classList.remove("disable");
+}
+function disableCredit() {
+    domElement.creditSVG.classList.add("disable");
+}
+function enableCredit() {
+    domElement.creditSVG.classList.remove("disable");
+}
 //begin vending machine
 var startVendingMachine = new SnackVendingMachine();
 function sumInsertedCoin(event) {
     if (startVendingMachine.getState instanceof NoMoneyState) {
-        globalVariable.totalAmountOfInsertedCoins += Number(event.target.getAttribute("data-money"));
-        domElement.screenPanel.innerHTML = "You insert ".concat(globalVariable.totalAmountOfInsertedCoins.toFixed(1), "$, please select item to buy or ESC to cancel");
+        globalVariable.typeOfPayment = 1;
+        globalVariable.totalAmountOfInsertedCoins += Number(Number(event.target.getAttribute("data-money")).toFixed(1));
+        cashOnMachine(event.target, 1);
+        domElement.screenPanel.innerHTML = "You insert ".concat(globalVariable.totalAmountOfInsertedCoins.toFixed(2), "$, please select item to buy or ESC to cancel");
         disableCredit();
     }
     else {
-        console.log(startVendingMachine.getState);
         startVendingMachine.getState.selectItemAndInsertMoney();
     }
 }
@@ -231,6 +351,7 @@ function getItemNumber(event) {
 }
 function showCredit() {
     if (startVendingMachine.getState instanceof NoMoneyState) {
+        globalVariable.typeOfPayment = 2;
         domElement.creditSVG.classList.add("when-credit-clicked-img");
         domElement.creditInput.classList.add("when-credit-clicked-input");
         domElement.creditButton.classList.add("when-credit-clicked-button");
@@ -263,10 +384,10 @@ domElement.insertionAreaDeleteButton.addEventListener("click", function () {
 });
 domElement.creditButton.addEventListener("click", function () {
     var tempCreditInput = domElement.creditInput.value;
-    console.log(tempCreditInput.length);
+    domElement.creditInput.value = "";
     if (tempCreditInput.length > 0) {
         globalVariable.totalAmountOfInsertedCoins += Number(tempCreditInput);
-        domElement.screenPanel.innerHTML = "You insert ".concat(globalVariable.totalAmountOfInsertedCoins.toFixed(1), "$, please select item to buy or ESC to cancel");
+        domElement.screenPanel.innerHTML = "You insert ".concat(globalVariable.totalAmountOfInsertedCoins.toFixed(2), "$, please select item to buy or ESC to cancel");
         hideCredit();
         disableCredit();
     }
@@ -325,12 +446,11 @@ function collectCashAndAcceptItem() {
     if (globalVariable.totalAmountOfInsertedCoins -
         globalVariable.prices()[Number(globalVariable.selectedProduct) - 1] >=
         0) {
-        console.log("eee");
         validatePrices = true;
     }
     if (!validatePrices) {
-        domElement.screenPanel.innerHTML = "your inserted money is not enough to buy selected item so insert ".concat(globalVariable.prices()[Number(globalVariable.selectedProduct) - 1] -
-            globalVariable.totalAmountOfInsertedCoins, " or more to buy it or ESC to cancel");
+        domElement.screenPanel.innerHTML = "your inserted money is not enough to buy selected item so insert ".concat((globalVariable.prices()[Number(globalVariable.selectedProduct) - 1] -
+            globalVariable.totalAmountOfInsertedCoins).toFixed(2), " or more to buy it or ESC to cancel");
         return;
     }
     if (moneyInserted &&
@@ -338,11 +458,10 @@ function collectCashAndAcceptItem() {
         itemNumberTrue &&
         validatePrices &&
         !itemSoldOut) {
-        console.log("all true");
         startVendingMachine.getState.selectItemAndInsertMoney();
         setTimeout(function () {
             startVendingMachine.getState.dispenseItem();
-        }, 2000);
+        }, 3500);
     }
 }
 domElement.acceptInputItemBtn.addEventListener("click", collectCashAndAcceptItem);
