@@ -82,9 +82,9 @@ var SoldState = /** @class */ (function () {
         globalVariable.totalAmountOfInsertedCoins = 0;
         domElement.changeArea.innerHTML =
             globalVariable.stringChange +
-            "=" +
-            globalVariable.change.toFixed(2) +
-            "$";
+                "=" +
+                globalVariable.change.toFixed(2) +
+                "$";
         setTimeout(reset, 2500);
         this.snackVendingMachine.setState = this.snackVendingMachine.noMoneyState;
     };
@@ -156,7 +156,15 @@ var Coin = /** @class */ (function () {
     return Coin;
 }());
 //Initial denomination coins
-globalVariable.coins.push(new Coin("_10cent", 1000), new Coin("_20cent", 500), new Coin("_50cent", 200), new Coin("_1dollar", 100), new Coin("_20dollar", 5), new Coin("_50dollar", 2));
+// globalVariable.coins.push(
+//   new Coin("_10cent", 1000),
+//   new Coin("_20cent", 500),
+//   new Coin("_50cent", 200),
+//   new Coin("_1dollar", 100),
+//   new Coin("_20dollar", 5),
+//   new Coin("_50dollar", 2)
+// );
+globalVariable.coins.push(new Coin("_10cent", 1000), new Coin("_20cent", 1), new Coin("_50cent", 200), new Coin("_1dollar", 100), new Coin("_20dollar", 5), new Coin("_50dollar", 2));
 //Initial the number of left for each item
 function fillItemLeft() {
     domElement.itemLeft.forEach(function (item) {
@@ -212,7 +220,9 @@ function getChangeForCash(amount, itemNumber) {
         for (var i_1 = 0; i_1 < coins.length; i_1++) {
             if (k - coins[i_1] >= 0 &&
                 globalVariable.coins[coins.length - i_1 - 1].getAmount > 0) {
-                if (min_coins[k - coins[i_1]] + 1 < min_coins[k]) {
+                if (min_coins[k - coins[i_1]] + 1 < min_coins[k] &&
+                    min_coins[k - coins[i_1]] + 1 <=
+                        globalVariable.coins[coins.length - i_1 - 1].getAmount) {
                     min_coins[k] = min_coins[k - coins[i_1]] + 1;
                     last_coin[k] = coins[i_1];
                 }

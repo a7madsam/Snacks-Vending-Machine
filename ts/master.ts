@@ -153,14 +153,23 @@ class Coin {
   }
 }
 //Initial denomination coins
+// globalVariable.coins.push(
+//   new Coin("_10cent", 1000),
+//   new Coin("_20cent", 500),
+//   new Coin("_50cent", 200),
+//   new Coin("_1dollar", 100),
+//   new Coin("_20dollar", 5),
+//   new Coin("_50dollar", 2)
+// );
 globalVariable.coins.push(
   new Coin("_10cent", 1000),
-  new Coin("_20cent", 500),
+  new Coin("_20cent", 1),
   new Coin("_50cent", 200),
   new Coin("_1dollar", 100),
   new Coin("_20dollar", 5),
   new Coin("_50dollar", 2)
 );
+
 //Initial the number of left for each item
 function fillItemLeft() {
   domElement.itemLeft.forEach((item) => {
@@ -217,7 +226,11 @@ function getChangeForCash(amount: number, itemNumber: number) {
         k - coins[i] >= 0 &&
         globalVariable.coins[coins.length - i - 1].getAmount > 0
       ) {
-        if (min_coins[k - coins[i]] + 1 < min_coins[k]) {
+        if (
+          min_coins[k - coins[i]] + 1 < min_coins[k] &&
+          min_coins[k - coins[i]] + 1 <=
+            globalVariable.coins[coins.length - i - 1].getAmount
+        ) {
           min_coins[k] = min_coins[k - coins[i]] + 1;
           last_coin[k] = coins[i];
         }
