@@ -156,15 +156,7 @@ var Coin = /** @class */ (function () {
     return Coin;
 }());
 //Initial denomination coins
-// globalVariable.coins.push(
-//   new Coin("_10cent", 1000),
-//   new Coin("_20cent", 500),
-//   new Coin("_50cent", 200),
-//   new Coin("_1dollar", 100),
-//   new Coin("_20dollar", 5),
-//   new Coin("_50dollar", 2)
-// );
-globalVariable.coins.push(new Coin("_10cent", 1000), new Coin("_20cent", 1), new Coin("_50cent", 200), new Coin("_1dollar", 100), new Coin("_20dollar", 5), new Coin("_50dollar", 2));
+globalVariable.coins.push(new Coin("_10cent", 1000), new Coin("_20cent", 500), new Coin("_50cent", 200), new Coin("_1dollar", 100), new Coin("_20dollar", 5), new Coin("_50dollar", 2));
 //Initial the number of left for each item
 function fillItemLeft() {
     domElement.itemLeft.forEach(function (item) {
