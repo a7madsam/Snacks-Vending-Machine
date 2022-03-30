@@ -20,14 +20,54 @@
 .empty-input {
   border: 1px solid red !important;
 }
-
+#show-log,
+#hide-log {
+  position: absolute;
+  top: -100px;
+  right: 5px;
+  border: none;
+  color: white;
+  background-color: var(--alt-background-color);
+  border-radius: 5px;
+  width: 80px;
+  height: 30px;
+  cursor: pointer;
+}
+#hide-log {
+  display: none;
+}
+#logs-content {
+  position: absolute;
+  top: -78px;
+  right: -172px;
+  background-color: var(--alt-background-color);
+  color: white;
+  max-width: 170px;
+  padding: 10px 5px;
+  border-radius: 5px;
+  display: none;
+  max-height: 300px;
+}
+#logs-content-row {
+  border: 1px solid var(--main-background-color);
+  width: 100%;
+  color: white;
+  padding: 0px 5px;
+  margin-bottom: 3px;
+}
+.show-logs {
+  display: block !important;
+}
+.hide-logs {
+  display: none !important;
+}
 /* end componant */
 body {
   font-family: "Dosis", sans-serif;
 }
 .container {
   position: relative;
-  margin: 20px auto;
+  margin: 5px auto;
   display: flex;
   border-top-left-radius: 20px;
   border-top-right-radius: 10px;

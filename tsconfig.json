@@ -1,5 +1,9 @@
 {
     "compilerOptions": {
-        "target": "ES6"
-    }
+        "target": "esnext",
+        "module": "es2015",
+        "rootDir": "./src/ts",
+        "outDir": "./Public/js"
+    },
+    "include": ["./src/ts"]
 }
