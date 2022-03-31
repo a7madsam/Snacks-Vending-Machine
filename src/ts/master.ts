@@ -5,15 +5,19 @@ import { Coin } from "./coins.js";
 import { Denomination } from "./Denomination_enum.js";
 import { PaymentType } from "./PaymentType_enum.js";
 import * as utilities from "./utilities.js";
+import { testMachine } from "./cashChangeTest.js";
+
+//test suite for machine
+testMachine();
 //Initial denomination coins
-globalVariable.coins.push(
+globalVariable.coins = [
   new Coin(Denomination.tenCent, 1000),
   new Coin(Denomination.twentyCent, 500),
   new Coin(Denomination.fiftyCent, 200),
   new Coin(Denomination.oneDollar, 100),
   new Coin(Denomination.twentyDollar, 5),
-  new Coin(Denomination.fiftyDollar, 2)
-);
+  new Coin(Denomination.fiftyDollar, 2),
+];
 //Initial the number of left for each item
 utilities.fillItemLeft();
 //begin vending machine

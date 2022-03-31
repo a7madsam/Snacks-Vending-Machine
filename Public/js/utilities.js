@@ -90,6 +90,19 @@ function isThereAnyCoinChangeInMachine(amount, itemNumber) {
         //to make sure that the change reach zero
         return -1;
     }
+    let changeString = ``;
+    for (const item in res) {
+        if (res[item] > 0) {
+            if (Number(item) <= 5) {
+                changeString += `[${res[item]}x${Number(item) * 10}cent] + `;
+            }
+            else {
+                changeString += `[${res[item]}x${Number(item) / 10}$] + `;
+            }
+        }
+    }
+    changeString = changeString.substring(0, changeString.length - 3);
+    return changeString;
 }
 const stringCoin = [
     Denomination.tenCent,
@@ -167,7 +180,7 @@ function getChangeForCash(amount, itemNumber) {
         }
         i++;
     }
-    globalVariable.stringChange = changeString.substring(0, changeString.length - 2);
+    globalVariable.stringChange = changeString.substring(0, changeString.length - 3);
     if (globalVariable.stringChange.length === 0) {
         globalVariable.stringChange = "[0$]";
     }
